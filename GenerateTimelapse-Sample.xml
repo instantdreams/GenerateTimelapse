@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+	<JobFolder>[path to where you place your powershell scripts\GenerateTimelapse]</JobFolder>
+	<JobName>GenerateTimelapse</JobName>
+	<LogFolder>[path to where you place your powershell scripts\Logs]</LogFolder>
+	<Sources>
+		<Source>
+			<Number>0</Number>
+			<Name>Front</Name>
+			<Location>Location, Region, Country</Location>
+			<Description>A view out the front</Description>
+		</Source>
+		<Source>
+			<Number>1</Number>
+			<Name>Back</Name>
+			<Location>Location, Region, Country</Location>
+			<Description>A view out the back</Description>
+		</Source>
+		<Source>
+			<Number>2</Number>
+			<Name>Top</Name>
+			<Location>Location, Region, Country</Location>
+			<Description>A view from the top</Description>
+		</Source>
+		<Source>
+			<Number>3</Number>
+			<Name>Side</Name>
+			<Location>Location, Region, Country</Location>
+			<Description>A view down the side</Description>
+		</Source>
+	</Sources>
+	<TimelapseFolder>[path to where your Netcam Studio files are stored\Timelapse]</TimelapseFolder>
+	<OutputFolder>[path to where you place your powershell scripts\Output]</OutputFolder>
+	<VideoHandler>C:\Program Files\Netcam Studio - 64-bit\ffmpeg.exe</VideoHandler>
+	<YouTubeUploadFolder>[path to where you place your powershell scripts\Powershell-YouTube-Upload]</YouTubeUploadFolder>
+	<YouTubeUploadScript>[path to where you place your powershell scripts\Powershell-YouTube-Upload\YouTube.ps1]</YouTubeUploadScript>
+	<RetentionDays>-10</RetentionDays>
+</Configuration>

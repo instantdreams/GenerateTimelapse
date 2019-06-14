@@ -1,0 +1,14 @@
+# Exclude configuration file - get GenerateTimelapse-Sample.xml from repository, rename to GenerateTimelapse.xml, then adjust accordingly
+GenerateTimelapse.xml
+
+# Created by https://www.gitignore.io/api/powershell
+# Edit at https://www.gitignore.io/?templates=powershell
+
+### PowerShell ###
+# Exclude packaged modules
+*.zip
+
+# Exclude .NET assemblies from source
+*.dll
+
+# End of https://www.gitignore.io/api/powershell
