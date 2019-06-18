@@ -193,6 +193,10 @@ function Merge-Timelapse
         Author:         Dean Smith | deanwsmith@outlook.com
         Update Date:    2019-06-14
         Purpose/Change: Merged scripts to use functions
+        Version:        1.2
+        Author:         Dean Smith | deanwsmith@outlook.com
+        Update Date:    2019-06-18
+        Purpose/Change: Adjusted GCI to use LastWriteTime to make sure videos are merged in order
     #>
     ## ---- [Function Parameters] ----
     [CmdletBinding()]
@@ -206,7 +210,7 @@ function Merge-Timelapse
     {
         # Retrieve a list of all files in the Output Folder - using ExpandProperty to get the full path
         $OutputVideos = Get-ChildItem -Path $OutputFolder | 
-            Sort-Object CreationDate |
+            Sort-Object -Property LastWriteTime |
             Select-Object -ExpandProperty FullName
         $TimeStamp = Get-Date -uformat "%T"
         Write-Output ("`r`n$TimeStamp`t${JobName}`tMerge-Timelapse`nFiles:`t`t" + $OutputVideos.Count + " video files in output folder")
@@ -306,6 +310,10 @@ function Upload-Timelapse
         Author:         Dean Smith | deanwsmith@outlook.com
         Update Date:    2019-06-14
         Purpose/Change: Merged scripts to use functions
+        Version:        1.2
+        Author:         Dean Smith | deanwsmith@outlook.com
+        Update Date:    2019-06-18
+        Purpose/Change: Adjusted Remove-Module name to be "YouTube"
     #>
     ## ---- [Function Parameters] ----
     [CmdletBinding()]
@@ -351,7 +359,7 @@ function Upload-Timelapse
     {
         # Unload the YouTube script
         Push-Location $YouTubeUploadFolder
-        Remove-Module $YouTubeUploadScript
+        Remove-Module YouTube
         Pop-Location
     }
 }
