@@ -399,22 +399,30 @@ function Cleanup-Timelapse
     ## ---- [Function Execution] ----powershell
     Process
     {
-        # Loop through each Timelapse Folder and remove images older than retention days, and remove folders if they are empty
-        $TimelapseFoldersRemoved = 0
+        # Loop through each Timelapse Folder and remove images older than retention days, then remove folders if they are empty
+        $TimeStamp = Get-Date -uformat "%T"
+        $LogMessage = "`r`n$TimeStamp`t${JobName}`tCleanup-Timelapse"
         ForEach ($Folder in $TimelapseFolders)
         {
-            Get-ChildItem -Path $Folder | Where-Object { $_.LastWriteTime -lt $DeletionDate } | Remove-Item
+            $TimelapseFolderItems = Get-ChildItem -Path $Folder | Where-Object { $_.LastWriteTime -lt $DeletionDate }
+            $TimelapseFolderItemCount = $TimelapseFolderItems.Count
+            $TimelapseFolderItems | Remove-Item
+            $LogMessage = $LogMessage + "`nFolder " + $Folder + ": " + $TimelapseFolderItemCount + " Items Removed"
             If ((Get-ChildItem $Folder | Select-Object -First 1 | Measure-Object).Count -eq 0)
             {
                 Remove-Item -Path $Folder -Recurse
-                $TimelapseFoldersRemoved = $TimelapseFoldersRemoved + 1
+                $LogMessage = $LogMessage + "`nFolder " + $Folder + " removed because it is now empty"
             }
         }
-        $Timestamp = Get-Date -UFormat "%T"
-        Write-Output ("`r`n$TimeStamp`t${JobName}`tCleanup-Timelapse`nFolders:`t$TimelapseFoldersRemoved removed because empty")
 
         # For the Output Folder, remove videos older than retention days
-        Get-ChildItem -Path $OutputFolder | Where-Object { $_.LastWriteTime -lt $DeletionDate } | Remove-Item
+        $OutputFolderItems = Get-ChildItem -Path $OutputFolder | Where-Object { $_.LastWriteTime -lt $DeletionDate }
+        $OutputFolderItemCount = $OutputFolderItems.Count
+        $OutputFolderItems | Remove-Item
+        $LogMessage = $LogMessage + "`nOutput Folder: "+ $OutputFolderItemCount + " Items Deleted"
+
+        # Write out the details to the transcript
+        Write-Output ($LogMessage)
     }
 
     ## ---- [Function End] ----
