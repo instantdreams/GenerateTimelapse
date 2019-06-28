@@ -48,13 +48,13 @@ function Identify-Timelapse
         Write-Output ("`r`n$TimeStamp`t${JobName}`tIdentify-Timelapse`nFolders:`t" + $TimelapseFolders.Count)
 
         # Create a collection of folders that match the regular expressions for each source
+        $TimeStamp = Get-Date -uformat "%T"
         $LogMessage = "`r`n$TimeStamp`t${JobName}`tIdentify-Timelapse"
         ForEach ($Source in $Sources)
         {
             $Source.TimelapseFolders = $TimelapseFolders | Select-String -Pattern $Source.FolderFilter -AllMatches
             $LogMessage = $LogMessage + "`nSource " + $Source.Number + ":`t" + $Source.TimelapseFolders.Count + " Folders"
         }
-        $TimeStamp = Get-Date -uformat "%T"
         Write-Output ($LogMessage)
 
         # Loop through the list of folders for each source, create the arguments, and pass them to Create-Timelapse
@@ -314,6 +314,10 @@ function Upload-Timelapse
         Author:         Dean Smith | deanwsmith@outlook.com
         Update Date:    2019-06-18
         Purpose/Change: Adjusted Remove-Module name to be "YouTube"
+        Version:        1.3
+        Author:         Dean Smith | deanwsmith@outlook.com
+        Update Date:    2019-06-27
+        Purpose/Change: Added logic to determine if upload was successful
     #>
     ## ---- [Function Parameters] ----
     [CmdletBinding()]
@@ -322,16 +326,16 @@ function Upload-Timelapse
     ## ---- [Function Beginning] ----
     Begin
     {
-        # Load the YouTube script
+        # Jump to the module folder and load the YouTube script
         Push-Location $YouTubeUploadFolder
         Import-Module $YouTubeUploadScript
-        Pop-Location
     }
 
     ## ---- [Function Execution] ----
     Process
     {
         # Loop through the list of filenames for each source to upload
+        $TimeStamp = Get-Date -uformat "%T"
         $LogMessage = "`r`n$TimeStamp`t`t${JobName}`tUpload-Timelapse"
         ForEach ($Source in $Sources)
         {
@@ -340,26 +344,30 @@ function Upload-Timelapse
             {
                 $UploadTitle = Split-Path $Source.FinalFilename -Leaf
                 $UploadTitle = $UploadTitle.Substring(0, $UploadTitle.LastIndexOf('.'))
-                Push-Location $YouTubeUploadFolder
-                Add-YouTube-Video -File $Source.FinalFilename -Title $UploadTitle -CategoryID 22 -Description $Source.Description -PrivacyStatus "unlisted" -LocationDescription $Source.Location -RecordingDate $DateStartSystem
-                Pop-Location
-                $LogMessage = $LogMessage + "`n`nSource " + $Source.Number + ":`t`t" + $Source.Name + "`nFilename:`t`t" + $Source.FinalFilename + "`nTitle:`t`t`t" + $UploadTitle + "`nDescription:`t" + $Source.Description + "`nLocation:`t`t" + $Source.Location + "`nRecording Date:`t" + $DateStartSystem
+                $VideoID = ""
+                $VideoID = Add-YouTube-Video -File $Source.FinalFilename -Title $UploadTitle -CategoryID 22 -Description $Source.Description -PrivacyStatus "unlisted" -LocationDescription $Source.Location -RecordingDate $DateStartSystem
+                If ($VideoID)
+                {
+                    $VideoURL = "https://youtu.be/" + $VideoID
+                    $LogMessage = $LogMessage + "`n`nSource " + $Source.Number + ":`t`t" + $Source.Name + "`nFilename:`t`t" + $Source.FinalFilename + "`nTitle:`t`t`t" + $UploadTitle + "`nDescription:`t" + $Source.Description + "`nLocation:`t`t" + $Source.Location + "`nRecording Date:`t" + $DateStartSystem + "`nVideo URL:`t`t" + $VideoURL
+                }
+                Else
+                {
+                    $LogMessage = $LogMessage + "`n`nSource " + $Source.Number + ":`t`tVideo attempted to upload but failed"
+                }
             }
             Else
             {
-                $LogMessage = $LogMessage + "`n`nSource " + $Source.Number + ":`t`tNo video file found - nothing to upload"
+                $LogMessage = $LogMessage + "`nSource " + $Source.Number + ":`t`tNo video file found - nothing to upload"
             }
         }
-        $TimeStamp = Get-Date -uformat "%T"
         Write-Output ($LogMessage)
     }
 
     ## ---- [Function End] ----
     End
     {
-        # Unload the YouTube script
-        Push-Location $YouTubeUploadFolder
-        Remove-Module YouTube
+        # Return to the calling folder
         Pop-Location
     }
 }
@@ -388,6 +396,10 @@ function Cleanup-Timelapse
         Author:         Dean Smith | deanwsmith@outlook.com
         Update Date:    2019-06-14
         Purpose/Change: Merged scripts to use functions
+        Version:        1.2
+        Author:         Dean Smith | deanwsmith@outlook.com
+        Update Date:    2019-06-28
+        Purpose/Change: Slight tweaks to correct logic
     #>
     ## ---- [Function Parameters] ----
     [CmdletBinding()]
@@ -399,6 +411,13 @@ function Cleanup-Timelapse
     ## ---- [Function Execution] ----powershell
     Process
     {
+        # Get a collection of timelapse folders sorted by date - again - because the scope is by function
+        $TimelapseFolders = Get-ChildItem -Path $TimelapseFolder -Directory | 
+            Sort-Object CreationTime |
+            Select-Object -ExpandProperty FullName
+        $TimeStamp = Get-Date -uformat "%T"
+        Write-Output ("`r`n$TimeStamp`t${JobName}`tCleanup-Timelapse`nTimelapse:`t" + $TimelapseFolders.Count)
+
         # Loop through each Timelapse Folder and remove images older than retention days, then remove folders if they are empty
         $TimeStamp = Get-Date -uformat "%T"
         $LogMessage = "`r`n$TimeStamp`t${JobName}`tCleanup-Timelapse"
@@ -419,7 +438,7 @@ function Cleanup-Timelapse
         $OutputFolderItems = Get-ChildItem -Path $OutputFolder | Where-Object { $_.LastWriteTime -lt $DeletionDate }
         $OutputFolderItemCount = $OutputFolderItems.Count
         $OutputFolderItems | Remove-Item
-        $LogMessage = $LogMessage + "`nOutput Folder: "+ $OutputFolderItemCount + " Items Deleted"
+        $LogMessage = $LogMessage + "`nOutput: "+ $OutputFolderItemCount + " Items Deleted"
 
         # Write out the details to the transcript
         Write-Output ($LogMessage)
@@ -456,6 +475,14 @@ function Cleanup-Timelapse
     Author:         Dean Smith | deanwsmith@outlook.com
     Update Date:    2019-06-06
     Purpose/Change: Merged scripts to use functions
+    Version:        1.2
+    Author:         Dean Smith | deanwsmith@outlook.com
+    Update Date:    2019-06-18
+    Purpose/Change: Tweaked MergeTimelapse to change sort order
+    Version:        1.3
+    Author:         Dean Smith | deanwsmith@outlook.com
+    Update Date:    2019-06-28
+    Purpose/Change: Added error logic to UploadTimelapse and adjusted logic in CleanupTimelapse
 #>
 
 ## ---- [Execution] ----
@@ -532,7 +559,7 @@ If (Test-Path $ConfigurationFile)
 Start-Transcript -Path $Logfile -NoClobber -Verbose -IncludeInvocationHeader
 $Timestamp = Get-Date -UFormat "%T"
 Write-Output ("-" * 79 + "`r`n$Timestamp`t${JobName}: Starting Transcript`r`n" + "-" * 79)
-Write-Output ("`r`n$TimeStamp`t${JobName}`n`t`t`tDisplay`t`t`tSystem`nStart Date:`t$DateStartDisplay`t`t$DateStartSystem`nEnd Date:`t$DateEndDisplay`t`t$DateEndSystem")
+Write-Output ("`r`n$TimeStamp`t${JobName}`n`t`t`tDisplay`t`t`t`tSystem`nStart Date:`t$DateStartDisplay`t`t`t$DateStartSystem`nEnd Date:`t$DateEndDisplay`t`t`t$DateEndSystem")
 
 # Call functions in order to process timelapse images into timelapse videos, merge them, upload them if requested, then clean up afterwards
 Identify-Timelapse
