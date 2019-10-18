@@ -7,6 +7,60 @@ Param
 )
 
 
+# Function Launch-Process - capture and display output from Start-Process
+function Launch-Process
+{
+    <#
+    .SYNOPSIS
+        Pass parameters to StartProcess and capture the output
+    .DESCRIPTION
+        Use temporary files to capture output and errors
+    .EXAMPLE
+        Launch-Process -Process $ProcessHandler -Arguments $ProcessArguments
+    .OUTPUTS
+        Log file, process started
+    .NOTES
+        Version:        1.0
+        Author:         Dean Smith | deanwsmith@outlook.com
+        Creation Date:  2019-09-18
+        Purpose/Change: Initial script creation
+    #>
+    ## ---- [Function Parameters] ----
+    [CmdletBinding()]
+    Param([string]$ProcessHandler,[string[]]$ProcessArguments)
+
+    ## ---- [Function Beginning] ----
+    Begin {}
+
+    ## ---- [Function Execution] ----
+    Process
+    {
+        Try
+        {
+            $StdOutTempFile = "$env:TEMP\$((New-Guid).Guid)"
+            $StdErrTempFile = "$env:TEMP\$((New-Guid).Guid)"
+            $Process = Start-Process -FilePath $ProcessHandler -ArgumentList $ProcessArguments -NoNewWindow -PassThru -Wait -RedirectStandardOutput $StdOutTempFile -RedirectStandardError $StdErrTempFile
+            $ProcessOutput = Get-Content -Path $StdOutTempFile -Raw
+            $ProcessError  = Get-Content -Path $StdErrTempFile -Raw
+            If ($Process.ExitCode -ne 0)
+            {
+                If ($ProcessError)  { Throw $ProcessError.Trim()  }
+                If ($ProcessOutput) { Throw $ProcessOutput.Trim() }
+            }
+            Else
+            {
+                If ([string]::IsNullOrEmpty($ProcessOutput) -eq $false) { Write-Output -InputObject $ProcessOutput }
+            }
+        }
+        Catch   { $PSCmdlet.ThrowTerminatingError($_) }
+        Finally { Remove-Item -Path $stdOutTempFile, $stdErrTempFile -Force -ErrorAction Ignore }
+    }
+
+    ## ---- [Function End] ----
+    End {}
+}    
+
+
 # Function Identify-Timelapse - find the source folders
 function Identify-Timelapse
 {
@@ -62,12 +116,14 @@ function Identify-Timelapse
         {
             $TimeStamp = Get-Date -uformat "%T"
             Write-Output ("`r`n$TimeStamp`t${JobName}`tIdentify-Timelapse`nSource " + $Source.Number + ":`tProcessing Started")
+            $Count = 0
             ForEach ($Folder in $Source.TimelapseFolders)
             {
-                $TimelapseFilename = $OutputFolder + "\Timelapse " + $Source.Name + " " + $DateStartDisplay + " " + $Source.TimelapseFolders.IndexOf($Folder) + ".mp4"
+                $TimelapseFilename = $OutputFolder + "\Timelapse " + $Source.Name + " " + $DateStartDisplay + " " + $Count + ".mp4"
                 $TimeStamp = Get-Date -uformat "%T"
                 Write-Output ("`r`n$TimeStamp`t${JobName}`tIdentify-Timelapse`nIn Folder:`t$Folder`nOut File:`t$TimelapseFilename")
                 Create-Timelapse -InputFolder $Folder -OutputFilename $TimelapseFilename
+                $Count = $Count + 1
             }
             $TimeStamp = Get-Date -uformat "%T"
             Write-Output ("`r`n$TimeStamp`t${JobName}`tIdentify-Timelapse`nSource " + $Source.Number + ":`tProcessing Ended")
@@ -153,7 +209,7 @@ function Create-Timelapse
             Write-Output ("`r`n$TimeStamp`t${JobName}`nLocation:`t$VideoHandler`nFilename:`t$OutputFilename`nArguments:`t$CreateArguments")
 
             ## Call FFmpeg to create timelapse
-            Start-Process -FilePath $VideoHandler -WorkingDirectory $InputFolder -ArgumentList $CreateArguments -NoNewWindow -Wait
+            Launch-Process -ProcessHandler $VideoHandler -ProcessArguments $CreateArguments
             $TimeStamp = Get-Date -uformat "%T"
             Write-Output ("`r`n$TimeStamp`t${JobName}`tCreate-Timelapse`nStatus:`t`tImage file generated")
         }
@@ -254,7 +310,7 @@ function Merge-Timelapse
 
                 # Call FFmpeg to merge timelapse videos
                 If (Test-Path $Source.FinalFilename) { Remove-Item $Source.FinalFilename }
-                Start-Process -FilePath $VideoHandler -WorkingDirectory $OutputFolder -ArgumentList $MergeArguments -NoNewWindow -Wait
+                Launch-Process -ProcessHandler $VideoHandler -ProcessArguments $MergeArguments
 
                 # Remove individual files if new file created successfully
                 If (Test-Path $Source.FinalFilename)
