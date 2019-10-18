@@ -1,5 +1,9 @@
 # Exclude configuration file - get GenerateTimelapse-Sample.xml from repository, rename to GenerateTimelapse.xml, then adjust accordingly
 GenerateTimelapse.xml
+GenerateTimelapseTask.ps1
+GenerateTimelapse Changelog.txt
+GenerateTimelapse Git Changelog.txt
+GenerateTimelapseLogic.txt
 
 # Created by https://www.gitignore.io/api/powershell
 # Edit at https://www.gitignore.io/?templates=powershell
